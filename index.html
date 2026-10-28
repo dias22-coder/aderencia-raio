@@ -6,6 +6,7 @@
 <title>Aderência ao Raio</title>
 <meta http-equiv="refresh" content="1800">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <style>
 body { font-family: Arial, sans-serif; background:#f1f5f9; margin:0; padding:16px; }
 .header { background:#1e293b; color:white; padding:20px; border-radius:12px 12px 0 0; }
@@ -29,7 +30,7 @@ td:first-child { text-align:left; font-weight:500; }
 <body>
 <div class="header">
   <h1>Aderência ao Raio</h1>
-  <div style="font-size:13px; opacity:0.8; margin-top:4px;">Atualizado em 28/10/2026 14:05 (MT)</div>
+  <div style="font-size:13px; opacity:0.8; margin-top:4px;">Atualizado em 28/10/2026 14:09 (MT)</div>
 </div>
 
 <div class="filters">
@@ -188,6 +189,8 @@ td:first-child { text-align:left; font-weight:500; }
 </div>
 
 <script>
+Chart.register(ChartDataLabels);
+
 const tabela = document.getElementById("tabela");
 const linhas = Array.from(tabela.querySelectorAll("tbody tr"));
 const selectRevenda = document.getElementById("filtroRevenda");
@@ -227,7 +230,6 @@ let chartLinha, chartAderencia, chartRevenda;
 function atualizarGraficos() {
   const visiveis = linhas.filter(l => l.style.display !== "none");
   
-  // Média do dia
   let soma = 0;
   visiveis.forEach(l => {
     const txt = l.cells[8].textContent.replace("%","").replace(",",".");
@@ -235,7 +237,6 @@ function atualizarGraficos() {
   });
   const media = visiveis.length ? (soma / visiveis.length).toFixed(2) : 0;
 
-  // Gráfico de Linha (Meta 95% + Média)
   if (chartLinha) chartLinha.destroy();
   chartLinha = new Chart(document.getElementById("chartLinha"), {
     type: "line",
@@ -243,23 +244,28 @@ function atualizarGraficos() {
       labels: ["Meta", "Média do Dia"],
       datasets: [{
         label: "%",
-        data: [95, media],
+        data: [95, parseFloat(media)],
         borderColor: "#3b82f6",
         backgroundColor: "rgba(59,130,246,0.1)",
         tension: 0.3,
         fill: true,
-        pointRadius: 6,
-        pointBackgroundColor: ["#ef4444", "#22c55e"]
+        pointRadius: 6
       }]
     },
     options: {
       responsive: true,
-      plugins: { title: { display: true, text: "Meta 95% vs Média do Dia (" + media + "%)" } },
+      plugins: {
+        title: { display: true, text: "Meta 95% vs Média do Dia (" + media + "%)" },
+        datalabels: {
+          color: "#1e293b",
+          font: { weight: "bold" },
+          formatter: (v) => v + "%"
+        }
+      },
       scales: { y: { beginAtZero: true, max: 100 } }
     }
   });
 
-  // Gráfico de Barras (preenche a largura)
   const labelsAd = visiveis.map(l => l.cells[2].textContent.trim().split(" ").slice(0,2).join(" "));
   const dataAd = visiveis.map(l => {
     const txt = l.cells[8].textContent.replace("%","").replace(",",".");
@@ -275,13 +281,20 @@ function atualizarGraficos() {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
-      plugins: { title: { display: true, text: "% Aderência por Motorista" } },
-      scales: { y: { beginAtZero: true, max: 100 } }
+      plugins: {
+        title: { display: true, text: "% Aderência por Motorista" },
+        datalabels: {
+          anchor: "end",
+          align: "top",
+          color: "#1e293b",
+          font: { weight: "bold", size: 10 },
+          formatter: (v) => v.toFixed(1) + "%"
+        }
+      },
+      scales: { y: { beginAtZero: true, max: 105 } }
     }
   });
 
-  // Gráfico de Pizza com total no centro
   const totaisPorRevenda = {};
   let totalGeral = 0;
   visiveis.forEach(l => {
@@ -302,7 +315,12 @@ function atualizarGraficos() {
       responsive: true,
       plugins: {
         title: { display: true, text: "Entregas Totais por Revenda" },
-        subtitle: { display: true, text: "Total: " + totalGeral, font: { size: 14, weight: "bold" } }
+        subtitle: { display: true, text: "Total: " + totalGeral, font: { size: 14, weight: "bold" } },
+        datalabels: {
+          color: "#fff",
+          font: { weight: "bold" },
+          formatter: (v) => v
+        }
       }
     }
   });
