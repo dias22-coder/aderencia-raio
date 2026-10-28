@@ -5,12 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Aderência ao Raio</title>
 <meta http-equiv="refresh" content="1800">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body { font-family: Arial, sans-serif; background:#f1f5f9; margin:0; padding:16px; }
 .header { background:#1e293b; color:white; padding:20px; border-radius:12px 12px 0 0; }
+.filters { background:#fff; padding:12px 16px; border-bottom:1px solid #e2e8f0; display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+.filters label { font-size:13px; font-weight:600; color:#334155; }
+.filters select, .filters input { padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; }
+.charts { display:flex; gap:16px; flex-wrap:wrap; margin:16px 0; }
+.chart-box { background:white; padding:16px; border-radius:12px; flex:1; min-width:280px; box-shadow:0 2px 8px rgb(0 0 0 / 0.06); }
 .card { background:white; overflow-x:auto; border-radius:0 0 12px 12px; }
 table { min-width:720px; width:100%; border-collapse:collapse; font-size:12px; }
-th { background:#fbbf24; padding:10px 8px; text-align:center; white-space:nowrap; }
+th { background:#fbbf24; padding:10px 8px; text-align:center; white-space:nowrap; position:sticky; top:0; }
 td { padding:8px; text-align:center; border-bottom:1px solid #eee; }
 td:first-child { text-align:left; font-weight:500; }
 .motorista { text-align:left !important; }
@@ -22,16 +28,40 @@ td:first-child { text-align:left; font-weight:500; }
 <body>
 <div class="header">
   <h1>Aderência ao Raio</h1>
-  <div style="font-size:13px; opacity:0.8; margin-top:4px;">Atualizado em 28/10/2026 13:48 (MT)</div>
+  <div style="font-size:13px; opacity:0.8; margin-top:4px;">Atualizado em 28/10/2026 13:52 (MT)</div>
 </div>
+
+<div class="filters">
+  <div>
+    <label>Revenda:</label><br>
+    <select id="filtroRevenda"><option value="">Todas</option></select>
+  </div>
+  <div>
+    <label>Motorista:</label><br>
+    <input type="text" id="filtroMotorista" placeholder="Buscar motorista...">
+  </div>
+  <div>
+    <label>&nbsp;</label><br>
+    <button onclick="limparFiltros()" style="padding:6px 12px; border-radius:6px; border:1px solid #cbd5e1; background:#f8fafc; cursor:pointer;">Limpar</button>
+  </div>
+</div>
+
+<div class="charts">
+  <div class="chart-box"><canvas id="chartAderencia" height="180"></canvas></div>
+  <div class="chart-box"><canvas id="chartRevenda" height="180"></canvas></div>
+</div>
+
 <div class="card">
-<table>
-<thead><tr>
+<table id="tabela">
+<thead>
+<tr>
 <th>Revenda</th><th>Mapa</th><th>Motorista</th><th>Entregas Total</th>
 <th>Entrega Pendente</th><th>Entregas Realizadas</th><th>Entregas no raio</th>
 <th>Entregas Fora do raio</th><th>% Aderência</th>
-</tr></thead>
-<tbody><tr>
+</tr>
+</thead>
+<tbody>
+<tr>
         <td>Lacerda</td><td class="numero">7509</td>
         <td class="motorista">Ryan Lucas Ribeiro Ramos</td>
         <td class="numero">26</td><td class="numero">17</td>
@@ -150,8 +180,93 @@ td:first-child { text-align:left; font-weight:500; }
         <td class="numero">0</td><td class="numero">0</td>
         <td class="numero">0</td>
         <td><span class="aderencia aderencia-100">100,00%</span></td>
-    </tr></tbody>
+    </tr>
+</tbody>
 </table>
 </div>
+
+<script>
+const tabela = document.getElementById("tabela");
+const linhas = Array.from(tabela.querySelectorAll("tbody tr"));
+const selectRevenda = document.getElementById("filtroRevenda");
+const inputMotorista = document.getElementById("filtroMotorista");
+
+const revendas = [...new Set(linhas.map(l => l.cells[0].textContent.trim()))].sort();
+revendas.forEach(r => {
+  const opt = document.createElement("option");
+  opt.value = r;
+  opt.textContent = r;
+  selectRevenda.appendChild(opt);
+});
+
+function filtrar() {
+  const rev = selectRevenda.value.toLowerCase();
+  const mot = inputMotorista.value.toLowerCase();
+  linhas.forEach(linha => {
+    const revenda = linha.cells[0].textContent.toLowerCase();
+    const motorista = linha.cells[2].textContent.toLowerCase();
+    const mostra = (rev === "" || revenda.includes(rev)) && (mot === "" || motorista.includes(mot));
+    linha.style.display = mostra ? "" : "none";
+  });
+  atualizarGraficos();
+}
+
+function limparFiltros() {
+  selectRevenda.value = "";
+  inputMotorista.value = "";
+  filtrar();
+}
+
+selectRevenda.addEventListener("change", filtrar);
+inputMotorista.addEventListener("input", filtrar);
+
+let chartAderencia, chartRevenda;
+
+function atualizarGraficos() {
+  const visiveis = linhas.filter(l => l.style.display !== "none");
+  
+  const labelsAd = visiveis.map(l => l.cells[2].textContent.trim().split(" ").slice(0,2).join(" "));
+  const dataAd = visiveis.map(l => {
+    const txt = l.cells[8].textContent.replace("%","").replace(",",".");
+    return parseFloat(txt) || 0;
+  });
+
+  if (chartAderencia) chartAderencia.destroy();
+  chartAderencia = new Chart(document.getElementById("chartAderencia"), {
+    type: "bar",
+    data: {
+      labels: labelsAd,
+      datasets: [{ label: "% Aderência", data: dataAd, backgroundColor: "#22c55e" }]
+    },
+    options: {
+      responsive: true,
+      plugins: { title: { display: true, text: "% Aderência por Motorista" } },
+      scales: { y: { beginAtZero: true, max: 100 } }
+    }
+  });
+
+  const totaisPorRevenda = {};
+  visiveis.forEach(l => {
+    const rev = l.cells[0].textContent.trim();
+    const total = parseInt(l.cells[3].textContent) || 0;
+    totaisPorRevenda[rev] = (totaisPorRevenda[rev] || 0) + total;
+  });
+
+  if (chartRevenda) chartRevenda.destroy();
+  chartRevenda = new Chart(document.getElementById("chartRevenda"), {
+    type: "doughnut",
+    data: {
+      labels: Object.keys(totaisPorRevenda),
+      datasets: [{ data: Object.values(totaisPorRevenda), backgroundColor: ["#3b82f6","#f59e0b","#10b981","#ef4444","#8b5cf6"] }]
+    },
+    options: {
+      responsive: true,
+      plugins: { title: { display: true, text: "Entregas Totais por Revenda" } }
+    }
+  });
+}
+
+filtrar();
+</script>
 </body>
 </html>
