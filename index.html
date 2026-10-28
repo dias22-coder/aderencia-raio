@@ -30,7 +30,7 @@ td:first-child { text-align:left; font-weight:500; }
 <body>
 <div class="header">
   <h1>Aderência ao Raio</h1>
-  <div style="font-size:13px; opacity:0.8; margin-top:4px;">Atualizado em 28/10/2026 14:16 (MT)</div>
+  <div style="font-size:13px; opacity:0.8; margin-top:4px;">Atualizado em 28/10/2026 14:31 (MT)</div>
 </div>
 
 <div class="filters">
@@ -65,13 +65,6 @@ td:first-child { text-align:left; font-weight:500; }
 </thead>
 <tbody>
 <tr>
-        <td>Lacerda</td><td class="numero">7508</td>
-        <td class="motorista">Joao Victor Ruela Da Silva</td>
-        <td class="numero">20</td><td class="numero">13</td>
-        <td class="numero">7</td><td class="numero">7</td>
-        <td class="numero">0</td>
-        <td><span class="aderencia aderencia-verde">100,00%</span></td>
-    </tr><tr>
         <td>Lacerda</td><td class="numero">7509</td>
         <td class="motorista">Ryan Lucas Ribeiro Ramos</td>
         <td class="numero">26</td><td class="numero">17</td>
@@ -237,40 +230,72 @@ let chartLinha, chartAderencia, chartRevenda;
 function atualizarGraficos() {
   const visiveis = linhas.filter(l => l.style.display !== "none");
   
-  let soma = 0;
+  // Média por Revenda + Média Total
+  const mediasPorRevenda = {};
+  const contagemPorRevenda = {};
+  let somaTotal = 0;
+  let qtdTotal = 0;
+
   visiveis.forEach(l => {
+    const rev = l.cells[0].textContent.trim();
     const txt = l.cells[8].textContent.replace("%","").replace(",",".");
-    soma += parseFloat(txt) || 0;
+    const perc = parseFloat(txt) || 0;
+    
+    if (!mediasPorRevenda[rev]) {
+      mediasPorRevenda[rev] = 0;
+      contagemPorRevenda[rev] = 0;
+    }
+    mediasPorRevenda[rev] += perc;
+    contagemPorRevenda[rev]++;
+    somaTotal += perc;
+    qtdTotal++;
   });
-  const media = visiveis.length ? (soma / visiveis.length).toFixed(2) : 0;
+
+  const labelsLinha = Object.keys(mediasPorRevenda);
+  const dataLinha = labelsLinha.map(rev => (mediasPorRevenda[rev] / contagemPorRevenda[rev]).toFixed(2));
+  const mediaTotal = qtdTotal ? (somaTotal / qtdTotal).toFixed(2) : 0;
 
   if (chartLinha) chartLinha.destroy();
   chartLinha = new Chart(document.getElementById("chartLinha"), {
     type: "line",
     data: {
-      labels: ["Meta", "Média do Dia"],
-      datasets: [{
-        label: "%",
-        data: [95, parseFloat(media)],
-        borderColor: "#3b82f6",
-        backgroundColor: "rgba(59,130,246,0.1)",
-        tension: 0.3,
-        fill: true,
-        pointRadius: 6
-      }]
+      labels: labelsLinha,
+      datasets: [
+        {
+          label: "Média por Unidade",
+          data: dataLinha,
+          borderColor: "#3b82f6",
+          backgroundColor: "rgba(59,130,246,0.1)",
+          tension: 0.3,
+          fill: false,
+          pointRadius: 5
+        },
+        {
+          label: "Média Total (" + mediaTotal + "%)",
+          data: Array(labelsLinha.length).fill(parseFloat(mediaTotal)),
+          borderColor: "#22c55e",
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false
+        },
+        {
+          label: "Meta 95%",
+          data: Array(labelsLinha.length).fill(95),
+          borderColor: "#ef4444",
+          borderDash: [3, 3],
+          pointRadius: 0,
+          fill: false
+        }
+      ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        title: { display: true, text: "Meta 95% vs Média do Dia (" + media + "%)" },
-        datalabels: {
-          color: "#1e293b",
-          font: { weight: "bold" },
-          formatter: (v) => v + "%"
-        }
+        title: { display: true, text: "Média por Unidade vs Meta 95%" },
+        datalabels: { display: false }
       },
-      scales: { y: { beginAtZero: true, max: 100 } }
+      scales: { y: { beginAtZero: false, min: 80, max: 100 } }
     }
   });
 
