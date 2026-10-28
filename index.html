@@ -12,8 +12,8 @@ body { font-family: Arial, sans-serif; background:#f1f5f9; margin:0; padding:16p
 .filters { background:#fff; padding:12px 16px; border-bottom:1px solid #e2e8f0; display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
 .filters label { font-size:13px; font-weight:600; color:#334155; }
 .filters select, .filters input { padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; }
-.charts { display:flex; gap:16px; flex-wrap:wrap; margin:16px 0; }
-.chart-box { background:white; padding:16px; border-radius:12px; flex:1; min-width:280px; box-shadow:0 2px 8px rgb(0 0 0 / 0.06); }
+.charts { display:flex; gap:16px; flex-wrap:wrap; margin:16px 0; justify-content:center; }
+.chart-box { background:white; padding:12px; border-radius:12px; width:48%; max-width:420px; box-shadow:0 2px 8px rgb(0 0 0 / 0.06); }
 .card { background:white; overflow-x:auto; border-radius:0 0 12px 12px; }
 table { min-width:720px; width:100%; border-collapse:collapse; font-size:12px; }
 th { background:#fbbf24; padding:10px 8px; text-align:center; white-space:nowrap; position:sticky; top:0; }
@@ -29,7 +29,7 @@ td:first-child { text-align:left; font-weight:500; }
 <body>
 <div class="header">
   <h1>Aderência ao Raio</h1>
-  <div style="font-size:13px; opacity:0.8; margin-top:4px;">Atualizado em 28/10/2026 13:58 (MT)</div>
+  <div style="font-size:13px; opacity:0.8; margin-top:4px;">Atualizado em 28/10/2026 14:00 (MT)</div>
 </div>
 
 <div class="filters">
@@ -48,8 +48,8 @@ td:first-child { text-align:left; font-weight:500; }
 </div>
 
 <div class="charts">
-  <div class="chart-box"><canvas id="chartAderencia" height="180"></canvas></div>
-  <div class="chart-box"><canvas id="chartRevenda" height="180"></canvas></div>
+  <div class="chart-box"><canvas id="chartAderencia" height="120"></canvas></div>
+  <div class="chart-box"><canvas id="chartRevenda" height="120"></canvas></div>
 </div>
 
 <div class="card">
